@@ -30,19 +30,23 @@ body {
 .header {
   text-align: center;
   margin-bottom: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.header h1 {
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  color: var(--text-color);
+.logo-container {
+  margin: 2rem auto;
+  display: flex;
+  justify-content: center;
 }
 
-.header p {
-  font-size: 1.25rem;
-  color: var(--light-text);
-  margin-top: 0;
+.logo-image {
+  max-width: 600px;
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
 }
 
 /* Search and filter styles */
@@ -195,6 +199,57 @@ body {
   font-size: 1.125rem;
 }
 
+/* Hide "Made with Manus" tag - more aggressive selectors */
+a[href*="manus"], 
+a[href*="Manus"],
+[class*="manus"],
+[id*="manus"],
+[class*="Manus"],
+[id*="Manus"],
+a[href*="create-my-website"],
+a[href*="Create-my-website"],
+a[href*="Create-My-Website"],
+div[class*="manus"],
+div[id*="manus"],
+div[class*="Manus"],
+div[id*="Manus"],
+button[class*="manus"],
+button[id*="manus"],
+button[class*="Manus"],
+button[id*="Manus"],
+span[class*="manus"],
+span[id*="manus"],
+span[class*="Manus"],
+span[id*="Manus"],
+img[class*="manus"],
+img[id*="manus"],
+img[class*="Manus"],
+img[id*="Manus"],
+svg[class*="manus"],
+svg[id*="manus"],
+svg[class*="Manus"],
+svg[id*="Manus"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+  pointer-events: none !important;
+  z-index: -9999 !important;
+  clip: rect(0, 0, 0, 0) !important;
+  overflow: hidden !important;
+}
+
+/* Additional global selector to hide any Manus-related elements */
+body *:has(> *[class*="manus"]),
+body *:has(> *[id*="manus"]),
+body *:has(> *[class*="Manus"]),
+body *:has(> *[id*="Manus"]) {
+  display: none !important;
+  visibility: hidden !important;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .app {
@@ -205,11 +260,13 @@ body {
     grid-template-columns: 1fr;
   }
   
-  .header h1 {
-    font-size: 2rem;
+  .logo-image {
+    max-width: 450px;
   }
-  
-  .header p {
-    font-size: 1rem;
+}
+
+@media (max-width: 480px) {
+  .logo-image {
+    max-width: 320px;
   }
 }

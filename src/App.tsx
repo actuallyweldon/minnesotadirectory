@@ -20,8 +20,9 @@ function HomePage({ filteredCompanies, industries, loading, handleSearch, handle
   return (
     <>
       <header className="header">
-        <h1>MINNESOTA COMPANIES</h1>
-        <p>Explore businesses in your area</p>
+        <div className="logo-container">
+          <img src="/images/minnesota-directory-logo.png" alt="Minnesota Directory" className="logo-image" />
+        </div>
       </header>
       
       <main className="main-content">
