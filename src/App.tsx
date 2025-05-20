@@ -4,7 +4,6 @@ import SearchBar from './components/SearchBar';
 import CompanyGrid from './components/CompanyGrid';
 import CompanyDetail from './components/CompanyDetail';
 import { Company, IndustryOption } from './lib/types';
-import { parseCSVData, getUniqueIndustries, formatSales } from './lib/utils';
 import './App.css';
 
 interface HomePageProps {
@@ -12,16 +11,17 @@ interface HomePageProps {
   filteredCompanies: Company[];
   industries: IndustryOption[];
   loading: boolean;
+  error: string | null;
   handleSearch: (query: string) => void;
   handleIndustryChange: (industry: string) => void;
 }
 
-function HomePage({ filteredCompanies, industries, loading, handleSearch, handleIndustryChange }: HomePageProps) {
+function HomePage({ filteredCompanies, industries, loading, error, handleSearch, handleIndustryChange }: HomePageProps) {
   return (
     <>
       <header className="header">
         <div className="logo-container">
-          <img src="/images/minnesota-directory-logo.png" alt="Minnesota Directory" className="logo-image" />
+          <img src="/images/minnesotadirectorylogo.png" alt="Minnesota Directory" className="logo-image" />
         </div>
       </header>
       
@@ -32,6 +32,12 @@ function HomePage({ filteredCompanies, industries, loading, handleSearch, handle
           industries={industries}
           totalCompanies={filteredCompanies.length}
         />
+        
+        {error && (
+          <div className="error-message">
+            Error loading data: {error}
+          </div>
+        )}
         
         <CompanyGrid 
           companies={filteredCompanies}
@@ -48,7 +54,11 @@ interface DetailPageWrapperProps {
 
 function DetailPageWrapper({ companies }: DetailPageWrapperProps) {
   const { id } = useParams<{ id: string }>();
-  const company = companies.find(c => c.name === decodeURIComponent(id || ''));
+  // Updated to use dunsNumber as the identifier if available, falling back to name
+  const company = companies.find(c => 
+    (c.dunsNumber && c.dunsNumber === id) || 
+    c.name === decodeURIComponent(id || '')
+  );
   
   if (!company) {
     return <div className="loading-container">Company not found</div>;
@@ -62,6 +72,7 @@ function App() {
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [industries, setIndustries] = useState<IndustryOption[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedIndustry, setSelectedIndustry] = useState<string>('');
 
@@ -69,52 +80,69 @@ function App() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/ForMinnesotacompanies.org $10M + 10+ ppl + MN Only.csv');
-        const csvText = await response.text();
-        const parsedData = parseCSVData(csvText);
+        setError(null);
         
-        // Filter out null values before mapping
-        const validData = parsedData.filter(item => item !== null);
+        // Add timestamp to prevent caching
+        const timestamp = new Date().getTime();
+        const jsonUrl = `/companies_data.json?t=${timestamp}`;
         
-        // Process and format the data with strict typing
-        const processedData: Company[] = validData
-          .filter(Boolean)
-          .map(company => ({
-            name: company.name || '',
-            address: company.address || '',
-            city: company.city || '',
-            state: company.state || '',
-            postalCode: company.postalCode || '',
-            sales: formatSales(company.sales || ''),
-            employees: company.employees || '',
-            description: company.description || '',
-            industry: company.industry || '',
-            isHeadquarters: Boolean(company.isHeadquarters),
-            naicsDescription: company.naicsDescription || '',
-            tradestyle: company.tradestyle || '',
-            phone: company.phone || '',
-            url: company.url || '',
-            rawSales: company.sales || '',
-            ownership: company.ownership || '',
-            ticker: company.ticker || '',
-            employeesSite: company.employeesSite || '',
-            sicDescription: company.sicDescription || ''
+        console.log(`Fetching JSON data from: ${jsonUrl}`);
+        
+        // Fetch the JSON file
+        const response = await fetch(jsonUrl);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch JSON data: ${response.status} ${response.statusText}`);
+        }
+        
+        console.log('JSON fetch successful, parsing data...');
+        const data = await response.json();
+        
+        if (!data || !data.companies || !Array.isArray(data.companies)) {
+          throw new Error('Invalid JSON data format');
+        }
+        
+        console.log(`Loaded ${data.companies.length} companies with ${data.companies.reduce((sum: number, company: Company) => sum + (company.contacts?.length || 0), 0)} contacts`);
+        
+        // Log a sample company if available
+        if (data.companies.length > 0) {
+          console.log('Sample company:', data.companies[0].name);
+        }
+        
+        setCompanies(data.companies);
+        setFilteredCompanies(data.companies);
+        
+        // Use industries from JSON if available, otherwise extract from companies
+        if (data.industries && Array.isArray(data.industries)) {
+          console.log(`Using ${data.industries.length} pre-extracted industries from JSON`);
+          const industryOptions = data.industries.map((industry: string) => ({
+            value: industry,
+            label: industry
           }));
+          setIndustries(industryOptions);
+        } else {
+          console.log('Extracting industries from companies data...');
+          // Extract unique industries
+          const uniqueIndustries = new Set<string>();
+          data.companies.forEach((company: Company) => {
+            if (company.industry) {
+              uniqueIndustries.add(company.industry);
+            }
+          });
+          
+          const industryOptions = Array.from(uniqueIndustries).sort().map(industry => ({
+            value: industry,
+            label: industry
+          }));
+          
+          console.log(`Extracted ${uniqueIndustries.size} unique industries`);
+          setIndustries(industryOptions);
+        }
         
-        setCompanies(processedData);
-        setFilteredCompanies(processedData);
-        
-        // Extract unique industries for the filter dropdown
-        const uniqueIndustries = getUniqueIndustries(processedData);
-        const industryOptions = uniqueIndustries.map(industry => ({
-          value: industry,
-          label: industry
-        }));
-        
-        setIndustries(industryOptions);
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching or parsing data:', error);
+        setError(error instanceof Error ? error.message : 'Unknown error loading data');
         setLoading(false);
       }
     };
@@ -130,7 +158,13 @@ function App() {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(company => 
         company.name.toLowerCase().includes(query) || 
-        (company.description && company.description.toLowerCase().includes(query))
+        (company.description && company.description.toLowerCase().includes(query)) ||
+        // Also search in contacts if available
+        (company.contacts && company.contacts.some(contact => 
+          contact.firstName.toLowerCase().includes(query) || 
+          contact.lastName.toLowerCase().includes(query) ||
+          contact.title.toLowerCase().includes(query)
+        ))
       );
     }
     
@@ -161,6 +195,7 @@ function App() {
                 filteredCompanies={filteredCompanies}
                 industries={industries}
                 loading={loading}
+                error={error}
                 handleSearch={handleSearch}
                 handleIndustryChange={handleIndustryChange}
               />

@@ -1,107 +1,61 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-
-export interface CompanyData {
-  [key: string]: string;
-}
+import { Company } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const parseCSVData = (csvData: string) => {
-  // CSV parsing logic remains the same
-  const rows = csvData.split('\n');
-  const headers = rows[0].split(',').map(h => h.replace(/"/g, ''));
+export function formatCurrency(value: string | number): string {
+  if (!value) return '$0';
   
-  return rows.slice(1).map(row => {
-    if (!row.trim()) return null;
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  
+  if (isNaN(numValue)) return '$0';
+  
+  // Format based on size
+  if (numValue >= 1e9) {
+    return `$${(numValue / 1e9).toFixed(1)}B`;
+  } else if (numValue >= 1e6) {
+    return `$${(numValue / 1e6).toFixed(1)}M`;
+  } else if (numValue >= 1e3) {
+    return `$${(numValue / 1e3).toFixed(1)}K`;
+  } else {
+    return `$${numValue.toFixed(2)}`;
+  }
+}
+
+export function truncateText(text: string, maxLength: number): string {
+  if (!text) return '';
+  return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+}
+
+export async function loadJSONData(): Promise<{companies: Company[], industries: string[]}> {
+  try {
+    // Add cache-busting timestamp to prevent browser caching
+    const timestamp = new Date().getTime();
+    const response = await fetch(`/companies_data.json?t=${timestamp}`);
     
-    // Handle commas within quoted fields
-    const values: string[] = [];
-    let inQuotes = false;
-    let currentValue = '';
-    
-    for (let i = 0; i < row.length; i++) {
-      const char = row[i];
-      
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
-        values.push(currentValue.replace(/"/g, ''));
-        currentValue = '';
-      } else {
-        currentValue += char;
-      }
+    if (!response.ok) {
+      throw new Error(`Failed to fetch JSON data: ${response.status}`);
     }
     
-    values.push(currentValue.replace(/"/g, ''));
-    
-    const company: CompanyData = {};
-    headers.forEach((header, index) => {
-      company[header] = values[index] || '';
-    });
-    
-    return {
-      name: company['Company Name'] || '',
-      tradestyle: company['Tradestyle'] || '',
-      address: company['Address Line 1'] || '',
-      city: company['City'] || '',
-      state: company['State Or Province'] || '',
-      postalCode: company['Postal Code'] || '',
-      phone: company['Phone'] || '',
-      url: company['URL'] || '',
-      sales: company['Sales (USD)'] || '',
-      employees: company['Employees (Total)'] || '',
-      description: company['Business Description'] || '',
-      industry: company['D&B Hoovers Industry'] || '',
-      isHeadquarters: company['Is Headquarters'] === 'true',
-      naicsDescription: company['NAICS 2022 Description'] || '',
-      ownership: company['Ownership Type'] || '',
-      ticker: company['Ticker'] || '',
-      employeesSite: company['Employees (Single Site)'] || '',
-      sicDescription: company['US 8-Digit SIC Description'] || ''
-    };
-  }).filter(Boolean);
-};
-
-export const formatSales = (sales: string): string => {
-  if (!sales) return 'N/A';
-  
-  const num = parseFloat(sales);
-  if (isNaN(num)) return 'N/A';
-  
-  if (num >= 1e9) {
-    return `$${(num / 1e9).toFixed(1)}B`;
-  } else if (num >= 1e6) {
-    return `$${(num / 1e6).toFixed(1)}M`;
-  } else {
-    return `$${num.toLocaleString()}`;
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error loading JSON data:', error);
+    throw error;
   }
-};
+}
 
-export const getUniqueIndustries = (companies: any[]) => {
+export function getUniqueIndustries(companies: Company[]): string[] {
   const industries = new Set<string>();
   
-  companies.forEach((company: any) => {
+  companies.forEach(company => {
     if (company.industry) {
       industries.add(company.industry);
     }
   });
   
   return Array.from(industries).sort();
-};
-
-export const formatPhoneNumber = (phone: string): string => {
-  if (!phone) return '';
-  
-  // Remove non-numeric characters
-  const cleaned = phone.replace(/\D/g, '');
-  
-  // Format as (XXX) XXX-XXXX if it's a 10-digit number
-  if (cleaned.length === 10) {
-    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
-  }
-  
-  return phone;
-};
+}

@@ -1,0 +1,124 @@
+.company-card {
+  background-color: var(--card-bg);
+  border-radius: 0.5rem;
+  box-shadow: var(--card-shadow);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  height: 100%;
+}
+
+.company-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+.company-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.company-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  color: #111827;
+  flex-grow: 1;
+}
+
+.hq-badge {
+  background-color: #e0f2fe;
+  color: #0284c7;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.contacts-badge {
+  background-color: #e0e7ff;
+  color: #4f46e5;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.company-industry {
+  color: #6b7280;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.company-details {
+  margin-bottom: 1rem;
+}
+
+.detail-item {
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: baseline;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #6b7280;
+  margin-right: 0.5rem;
+}
+
+.detail-value {
+  color: #111827;
+  font-weight: 500;
+}
+
+.company-description {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+  flex-grow: 1;
+}
+
+.view-details-link {
+  margin-top: auto;
+  text-align: right;
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-end;
+}
+
+.company-card:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .company-name {
+    font-size: 1.1rem;
+  }
+  
+  .company-industry {
+    font-size: 0.8rem;
+  }
+  
+  .detail-item, .company-description {
+    font-size: 0.8rem;
+  }
+}
